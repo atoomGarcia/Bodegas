@@ -1,0 +1,332 @@
+﻿@{
+    ViewData["Title"] = "Asignación de artículos a bodegas";
+}
+
+<h1>@ViewData["Title"]</h1>
+<p>Sección para distribucion y asignación de artículos a bodegas</p>
+
+
+<div>
+    <div id="app">
+        <el-row class="demo-autocomplete">
+            <el-col>
+                <el-col>
+                    <div class="sub-title">Bodega</div>
+                    <el-autocomplete class="inline-input"
+                                     v-model="bod"
+                                     :fetch-suggestions="querySearch"
+                                     placeholder="Ingrese bodega"
+                                     v-on:select="handleSelect"></el-autocomplete>
+                </el-col>
+                <el-col>
+                    <div class="sub-title">Artículo</div>
+                    <el-autocomplete class="inline-input"
+                                     v-model="art"
+                                     :fetch-suggestions="querySearch2"
+                                     placeholder="Ingrese articulo"
+                                     v-on:select="handleSelect2"></el-autocomplete>
+                </el-col>
+            </el-col>
+                <el-col>
+                    <div class="sub-title">Ubicacion</div>
+                    <el-input v-model="nombreUbi"></el-input>
+                    <el-col>
+                        <div class="sub-title">Cantidad</div>
+                        <el-input type="number" v-model="cantidad"></el-input>
+                    </el-col>
+                    <el-col>
+                        <div class="sub-title">Maximo</div>
+                        <el-input type="number" v-model="maximo"></el-input>
+                    </el-col>
+        </el-row>
+        <el-col :span="12">
+            <button v-on:click.prevent="agregaArticulo()" class="btn btn-success">Agregar</button>
+        </el-col>
+    </div>
+    <br />
+    <hr />
+    <div id="demo">
+        <form id="search">
+            Buscar <input name="query" class="form-control-sm" v-model="searchQuery">
+        </form>
+        <br />
+        <demo-grid :data="gridData"
+                   :columns="gridColumns"
+                   :filter-key="searchQuery">
+        </demo-grid>
+    </div>
+
+
+</div>
+
+    <script type="text/x-template" id="grid-template">
+        <table>
+            <thead>
+                <tr>
+                    <th v-for="key in columns"
+                        v-on:click="sortBy(key)"
+                        :class="{ active: sortKey == key }">
+                        {{ key | capitalize }}
+                        <span class="arrow" :class="sortOrders[key] > 0 ? 'asc' : 'dsc'">
+                        </span>
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr v-for="entry in filteredData">
+                    <td v-for="key in columns">
+                        {{entry[key]}}
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </script>
+
+    @section Scripts{
+
+        <script>
+            var app = new Vue({
+                el: "#app",
+                data() {
+                    return {
+                        links: [],
+                        links2: [],
+                        bod: '',
+                        art: '',
+                        i: '',
+                        i2:'',
+                        maximo: '',
+                        cantidad: '',
+                        nombreUbi: ''
+                    };
+                },
+                created() {
+                    this.loadAll();
+                    this.loadAllArticulos();
+                },
+                methods: {
+                    agregaArticulo: function (model) {
+
+                        if (this.i2 != '' && this.cantidad != '' && this.nombreUbi != '' && this.maximo != '' && this.i != '') { 
+                            const producto = "1," + this.i2 + "," + this.cantidad + ",'" + this.nombreUbi + "'," + this.maximo + "," + this.i;
+                            //alert(producto);
+
+                            /*const producto = {
+                                ClaveUbicacion: 1, ClaveArticulo: this.i2, Piezas: this.cantidad, NombreUbicacion: this.nombreUbi, PiezasMaximas: this.maximo, ClaveBodega: this.i
+                            }; */
+                            //alert(producto);
+                            //const producto = "1,5,10,PASILLO 3,100,2";
+                            axios.post("https://localhost:44356/api/Ubicaciones/" + producto)
+                                .then(
+                                    Swal.fire(
+                                        'Buen Trabajo!',
+                                        'Se ha asignado la ubicacion al producto !',
+                                        'success'
+                                    ),
+                                    this.i2 = "",
+                                    this.cantidad = "",
+                                    this.nombreUbi = "",
+                                    this.maximo = "",
+                                    this.i = "",
+                                    this.$refs.demo.getUbicaciones()
+                                    //this.demo.getUbicaciones()
+                                )
+                                .catch(error => {
+                                    this.errorMessage = error.message;
+                                    console.error("There was an error!", error);
+                                });
+                            //this.$http.post("https://localhost:44356/api/Ubicaciones").then(function (response) {
+                        }
+                        else {
+                                Swal.fire(
+                                    'Atención!',
+                                    'Al parecer alguno de los campos no fue ingresado correctamente, favor de verificar.',
+                                    'warning'
+                                )
+                         }
+                    },
+                    querySearch(queryString, ab) {
+                        var links = this.links;
+                        
+                        var results = queryString ? links.filter(this.createFilter(queryString)) : links;
+                        ab(results);
+                    },
+                    querySearch2(queryString2, ab2) {
+                        var links2 = this.links2;
+
+                        var results2 = queryString2 ? links2.filter(this.createFilter2(queryString2)) : links2;
+                        ab2(results2);
+                    },
+                    createFilter(queryString) {
+                        return (link) => {
+                            return (link.value.toLowerCase().indexOf(queryString.toLowerCase()) === 0);
+                        };
+                    },
+                    createFilter2(queryString2) {
+                        return (link2) => {
+                            return (link2.value.toLowerCase().indexOf(queryString2.toLowerCase()) === 0);
+                        };
+                    },
+                    loadAll() {
+                        this.$http.get("https://localhost:44356/api/Bodega").then((response) => {
+                            this.links= response.body;
+                        });
+                    },
+                    loadAllArticulos() {
+                        this.$http.get("https://localhost:44356/api/ExtraeArticulos").then((response) => {
+                            this.links2 = response.body;
+                        });
+                    },
+                    handleSelect(item) {
+                        this.i= item.link;
+                    },
+                    handleSelect2(item) {
+                        this.i2 = item.link;
+                    }
+                }
+            });
+
+            Vue.component('demo-grid', {
+                template: '#grid-template',
+                props: {
+                    data: Array,
+                    columns: Array,
+                    filterKey: String
+                },
+                data: function () {
+                    var sortOrders = {}
+                    this.columns.forEach(function (key) {
+                        sortOrders[key] = 1
+                    })
+                    return {
+                        sortKey: '',
+                        sortOrders: sortOrders
+                    }
+                },
+                computed: {
+                    filteredData: function () {
+                        var sortKey = this.sortKey
+                        var filterKey = this.filterKey && this.filterKey.toLowerCase()
+                        var order = this.sortOrders[sortKey] || 1
+                        var data = this.data
+                        if (filterKey) {
+                            data = data.filter(function (row) {
+                                return Object.keys(row).some(function (key) {
+                                    return String(row[key]).toLowerCase().indexOf(filterKey) > -1
+                                })
+                            })
+                        }
+                        if (sortKey) {
+                            data = data.slice().sort(function (a, b) {
+                                a = a[sortKey]
+                                b = b[sortKey]
+                                return (a === b ? 0 : a > b ? 1 : -1) * order
+                            })
+                        }
+                        return data
+                    }
+                },
+                filters: {
+                    capitalize: function (str) {
+                        return str.charAt(0).toUpperCase() + str.slice(1)
+                    }
+                },
+                methods: {
+                    sortBy: function (key) {
+                        this.sortKey = key
+                        this.sortOrders[key] = this.sortOrders[key] * -1
+                    }
+                }
+            })
+
+            var demo = new Vue({
+                el: '#demo',
+                data: {
+                    searchQuery: '',
+                    gridColumns: ['claveArticulo', 'nombreBodega', 'descripcionCorta', 'nombreUbicacion', 'piezas', 'piezasMaximas'],
+                    gridData: null
+                },
+                created: function () {
+                    this.getUbicaciones();
+                },
+                methods: {
+                    getUbicaciones: function () {
+                        this.$http.get("https://localhost:44356/api/Ubicaciones").then((response) => {
+                            this.gridData = response.body;
+
+                        }).catch(error => {
+                            this.errorMessage = error;
+                            Swal.fire(
+                                'Atención!',
+                                'No pudo completarse el proceso de obtención de ubicaciones',
+                                'warning'
+                            )
+                        });
+                     
+                    }
+                }
+            })
+        </script>
+    }
+
+    <style lang="stylus" scoped>
+        body {
+            font-family: Helvetica Neue, Arial, sans-serif;
+            font-size: 14px;
+            color: #444;
+        }
+
+        table {
+            border: 2px solid #42b983;
+            border-radius: 3px;
+            background-color: #fff;
+        }
+
+        th {
+            background-color: #42b983;
+            color: rgba(255,255,255,0.66);
+            cursor: pointer;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
+
+        td {
+            background-color: #f9f9f9;
+        }
+
+        th, td {
+            min-width: 120px;
+            padding: 10px 20px;
+        }
+
+            th.active {
+                color: #fff;
+            }
+
+                th.active .arrow {
+                    opacity: 1;
+                }
+
+        .arrow {
+            display: inline-block;
+            vertical-align: middle;
+            width: 0;
+            height: 0;
+            margin-left: 5px;
+            opacity: 0.66;
+        }
+
+            .arrow.asc {
+                border-left: 4px solid transparent;
+                border-right: 4px solid transparent;
+                border-bottom: 4px solid #fff;
+            }
+
+            .arrow.dsc {
+                border-left: 4px solid transparent;
+                border-right: 4px solid transparent;
+                border-top: 4px solid #fff;
+            }
+    </style>

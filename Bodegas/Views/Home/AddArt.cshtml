@@ -1,0 +1,157 @@
+﻿
+@{
+    ViewData["Title"] = "Agregar Artículos";
+
+}
+<h1>@ViewData["Title"]</h1>
+
+<p>Sección para agregar articulos nuevos</p>
+
+
+<div>
+    <div id="app">
+        <el-form v-loading="loading" :model="ruleForm" :rules="rules" label-width="120px"  ref="ruleForm">
+            <el-form-item label="Codigo" prop="cb">
+                <el-input type="number" v-model="ruleForm.cb"></el-input>
+            </el-form-item>
+            <el-form-item label="Nombre" prop="nombre">
+                <el-input v-model="ruleForm.nombre"></el-input>
+            </el-form-item>
+            <el-form-item label="Descripcion" prop="desc">
+                <el-input v-model="ruleForm.desc"></el-input>
+            </el-form-item>
+            <el-form-item>
+                <button v-on:click.prevent="agregaArticulo()"  class="btn btn-success">Agregar</button>
+            </el-form-item>
+        </el-form>
+    </div>
+    <div id="datos">
+        <!-- Tabla donde se muestran los datos -->
+        <section class="data">
+            <h3>Articulos</h3>
+            <template>
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th scope="col">ARTICULO ID</th>
+                            <th scope="col">CODIGO</th>
+                            <th scope="col">NOMBRE</th>
+                            <th scope="col">DESCRIPCION</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="(code, index) in codigobarras">
+                            <td>{{code.claveArticulo}}</td>
+                            <td>
+                                {{code.codigoBarras}}
+                            </td>
+                            <td>
+                                {{code.descripcionCorta}}
+                            </td>
+                            <td>
+                                {{code.descripcion}}
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </template>
+        </section>
+    </div>
+</div>
+
+    @section Scripts{
+
+        <script>
+            var app = new Vue({
+                el: "#app",
+                data() {
+                    return {
+                        loading:false,
+                        ruleForm: {
+                            cb: "",
+                            nombre: "",
+                            desc: ""
+                        },
+                        rules: {
+                            cb: [
+                                { required: true, message: 'Debe ingresar un codigo de barras' },
+                                { min: 3, message: 'Debe contener almenos 3 caracteres como minimo' },
+                                { max: 20, message: 'Debe contener 20 caracteres como maximo' }
+                            ],
+                            nombre: [
+                                { required: true, message: 'Debe ingresar un nombre de producto' }
+                            ],
+                            desc: [
+                                { required: true, message: 'Debe ingresar una descripción' }
+                            ],
+                        }
+                    };
+                },
+                created() {
+
+                },
+                methods: {
+                    agregaArticulo: function (model) {
+                        let self = this;
+                        self.$refs['ruleForm'].validate((valid) => {
+                            if (valid) {
+                                const producto = {
+                                    DescripcionCorta: this.ruleForm.nombre, Descripcion: this.ruleForm.desc, CodigoBarras: this.ruleForm.cb
+                                };/*
+                                alert(producto);
+                                axios.post("https://localhost:44356/api/Articulo", producto)
+                                    .then(response => this.articleId = response.data.id)
+                                    .catch(error => {
+                                        this.errorMessage = error.message;
+                                        console.error("There was an error!", error);
+                                    });*/
+                               
+                                //this.articleId = response.data.id;
+                                this.$http.post("https://localhost:44356/api/Articulo", producto).then(function (response) {
+                                    Swal.fire(
+                                        'Buen Trabajo!',
+                                        'Se ha agregado el articulo correctamente !',
+                                        'success'
+                                    )
+                                }).catch(error => {
+                                    this.errorMessage = error;
+                                    Swal.fire(
+                                        'Atención!',
+                                        'No pudo completarse el proceso',
+                                        'warning'
+                                    )
+                                });
+                            } else {
+                                Swal.fire(
+                                    'Atención!',
+                                    'Al parecer alguno de los campos no fue ingresado correctamente, favor de verificar.',
+                                    'warning'
+                                )
+                            }
+
+                        })
+                        
+                        
+                    }
+                }
+            });
+
+            var datos = new Vue({
+                el: "#datos",
+                data: {
+                    codigobarras: ""
+                },
+                created: function () {
+                    this.getArticulo();
+                },
+                methods: {
+                    getArticulo: function () {
+                        this.$http.get("https://localhost:44356/api/Articulo").then(function (response) {
+                            this.codigobarras = response.body;
+                        })
+                    }
+                }
+            });
+        </script>
+    }
